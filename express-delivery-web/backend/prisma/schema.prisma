@@ -1,0 +1,169 @@
+// 快递服务系统数据库模型
+// Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  password  String
+  nickname  String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联
+  orders    Order[]
+  addresses Address[]
+  reviews   Review[]
+
+  @@map("users")
+}
+
+model DeliveryStation {
+  id          String  @id @default(cuid())
+  name        String
+  address     String
+  latitude    Float
+  longitude   Float
+  phone       String?
+  description String?
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 关联
+  orders Order[]
+
+  @@map("delivery_stations")
+}
+
+model Address {
+  id        String @id @default(cuid())
+  userId    String
+  name      String // 收件人姓名
+  phone     String // 收件人电话
+  province  String
+  city      String
+  district  String
+  address   String // 详细地址
+  latitude  Float?
+  longitude Float?
+  isDefault Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  // 关联
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
+
+model Order {
+  id                String   @id @default(cuid())
+  userId            String
+  deliveryStationId String
+
+  // 收件信息
+  recipientName     String
+  recipientPhone    String
+  pickupCode        String? // 取件码
+
+  // 送达地址
+  deliveryAddress   String
+  deliveryLat       Float?
+  deliveryLng       Float?
+
+  // 服务类型
+  serviceType       ServiceType @default(STANDARD)
+  isUrgent          Boolean @default(false) // 加急服务
+
+  // 价格信息
+  basePrice         Float // 基础价格
+  distance          Float // 距离(公里)
+  distancePrice     Float // 距离费用
+  urgentFee         Float @default(0) // 加急费用
+  totalPrice        Float // 总价
+
+  // 订单状态
+  status            OrderStatus @default(PENDING)
+  paymentStatus     PaymentStatus @default(UNPAID)
+
+  // 时间信息
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  paidAt            DateTime?
+  completedAt       DateTime?
+
+  // 备注
+  remarks           String?
+
+  // 关联
+  user              User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveryStation   DeliveryStation @relation(fields: [deliveryStationId], references: [id])
+  payment           Payment?
+  review            Review?
+
+  @@map("orders")
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  orderId       String   @unique
+  amount        Float
+  paymentMethod String   @default("wechat")
+  transactionId String?  // 微信支付交易号
+  status        PaymentStatus @default(PENDING)
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+
+  // 关联
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  userId    String
+  rating    Int      // 1-5星
+  content   String?
+  createdAt DateTime @default(now())
+
+  // 关联
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+}
+
+enum ServiceType {
+  STANDARD  // 标准快递
+  EXPRESS   // 加急快递
+  PREMIUM   // 特快专递
+}
+
+enum OrderStatus {
+  PENDING     // 待处理
+  CONFIRMED   // 已确认
+  PICKING_UP  // 取件中
+  IN_TRANSIT  // 配送中
+  DELIVERED   // 已送达
+  COMPLETED   // 已完成
+  CANCELLED   // 已取消
+}
+
+enum PaymentStatus {
+  UNPAID    // 未支付
+  PENDING   // 支付中
+  PAID      // 已支付
+  REFUNDED  // 已退款
+  FAILED    // 支付失败
+}
