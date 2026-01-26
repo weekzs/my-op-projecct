@@ -232,6 +232,9 @@ npm run dev
 - `/orders` - 订单列表页面
 - `/orders/[id]` - 订单详情页面
 - `/profile` - 个人中心页面
+- `/addresses` - 地址管理页面
+- `/payments` - 支付记录页面
+- `/reviews` - 我的评价页面
 
 ## 🔗 API 接口
 
@@ -344,6 +347,8 @@ npm run dev
 - [支付系统配置](docs/PAYMENT_SETUP.md) - 支付系统详细配置说明
 - [微信支付配置](docs/WECHAT_PAY_SETUP.md) - 微信支付配置指南
 - [功能特性说明](docs/PAYMENT_AND_ADDRESS_FEATURES.md) - 已实现功能详细说明
+- [FRP 内网穿透配置](docs/FRP_GUIDE.md) - FRP 配置与常见问题
+- [错误记录与解决方案](docs/ERROR_LOG_RULES.md) - 问题记录、错误排查与解决方案
 - [项目结构说明](PROJECT_STRUCTURE.md) - 项目目录结构详解
 
 ## 🔄 开发计划

@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
         source: '/api/:path*',
         destination: 'http://localhost:3000/api/:path*',
       },
+      {
+        source: '/health',
+        destination: 'http://localhost:3000/health',
+      },
     ];
   },
   // 开发环境下允许跨域

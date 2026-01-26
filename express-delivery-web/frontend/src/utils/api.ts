@@ -21,6 +21,10 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
+    // 添加超时处理（10秒）- 在函数作用域顶层声明
+    const controller = new AbortController();
+    let timeoutId: NodeJS.Timeout | null = null;
+
     try {
       const url = `${this.baseURL}${endpoint}`;
 
@@ -61,12 +65,22 @@ class ApiClient {
         body: body ? (typeof body === 'string' ? JSON.parse(body) : body) : undefined
       });
 
+      // 设置超时
+      timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const response = await fetch(url, {
         ...options,
         method: options.method || 'GET',
         headers,
         body,
+        signal: controller.signal,
       });
+      
+      // 清除超时
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
 
       console.log('API Response:', {
         status: response.status,
@@ -115,7 +129,22 @@ class ApiClient {
         };
       }
     } catch (error) {
+      // 清除超时
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      
       console.error('API Request failed:', error);
+      
+      // 处理超时错误
+      if (error instanceof Error && error.name === 'AbortError') {
+        return {
+          success: false,
+          error: '请求超时，请检查网络连接或稍后重试',
+        };
+      }
+      
       return {
         success: false,
         error: error instanceof Error ? error.message : '网络错误，请检查网络连接',
