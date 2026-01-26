@@ -14,10 +14,14 @@ import uploadRoutes from './routes/uploads';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = Number(process.env.PORT || process.env.BACKEND_PORT || 3000);
 
 // 初始化Prisma客户端
 export const prisma = new PrismaClient();
+
+// 信任代理设置（用于 FRP/反向代理场景，让 rate-limit 能正确识别真实 IP）
+// 如果通过 FRP、Nginx、宝塔等反向代理访问，必须启用此设置
+app.set('trust proxy', true);
 
 // 中间件配置
 app.use(helmet());

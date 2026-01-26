@@ -17,8 +17,9 @@ echo.
 echo ========================================
 echo   服务启动完成！
 echo ========================================
-echo 前端地址: http://localhost:3002
-echo 后端API: http://localhost:3001
+echo 本地前端地址: http://localhost:3001
+echo 远程前端地址(宝塔/frps): http://服务器IP或域名:3001
+echo 后端API: http://localhost:3000
 echo.
 echo 按任意键关闭此窗口...
 pause >nul

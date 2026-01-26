@@ -53,7 +53,7 @@ export default function DiagnosticsPage() {
             {/* 后端状态 */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
               <h3 className="text-xl font-semibold text-blue-900 mb-4">
-                🚀 后端服务器 (端口 3001)
+                🚀 后端服务器 (端口 3000)
               </h3>
               <div className="space-y-2">
                 <p className="text-blue-800">
@@ -100,7 +100,7 @@ export default function DiagnosticsPage() {
               🛠️ 故障排除建议
             </h3>
             <ul className="space-y-2 text-yellow-800">
-              <li>• 确保后端服务器在端口 3001 上运行</li>
+              <li>• 确保后端服务器在端口 3000 上运行</li>
               <li>• 检查前端服务器是否在正确的端口上运行</li>
               <li>• 验证 Next.js 重写规则是否正确配置</li>
               <li>• 检查防火墙和网络连接</li>

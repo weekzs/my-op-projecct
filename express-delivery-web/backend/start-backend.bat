@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 echo Cleaning up previous Node.js processes...
 
 REM Terminate all node.exe processes

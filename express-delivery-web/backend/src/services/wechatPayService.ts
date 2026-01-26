@@ -141,7 +141,7 @@ class WeChatPayService {
           total: totalAmount,
           currency: 'CNY'
         },
-        notify_url: `${process.env.WECHAT_NOTIFY_URL || 'http://localhost:3001'}/api/payments/notify`,
+        notify_url: `${process.env.WECHAT_NOTIFY_URL || 'http://localhost:3000'}/api/payments/notify`,
       };
 
       // 如果是JSAPI支付，需要传入openid

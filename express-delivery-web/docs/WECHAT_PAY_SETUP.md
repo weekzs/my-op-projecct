@@ -33,7 +33,7 @@ WECHAT_SERIAL_NO=你的证书序列号
 # 本地开发可以不设置 WECHAT_CERT_PATH，代码会自动使用相对路径 1738582376_20260121_cert
 # 生产环境需要设置为证书目录的绝对路径
 WECHAT_CERT_PATH=
-WECHAT_NOTIFY_URL=http://localhost:3001/api/payments/wechat/notify
+WECHAT_NOTIFY_URL=http://localhost:3000/api/payments/wechat/notify
 ```
 
 **注意：** 

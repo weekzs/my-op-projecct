@@ -143,7 +143,7 @@ JWT_SECRET="your-super-secret-jwt-key-change-in-production"
 JWT_EXPIRES_IN="7d"
 
 # 服务器配置
-PORT=3001
+PORT=3000
 NODE_ENV="development"
 
 # 微信支付配置（可选，仅在使用微信支付时需要）
@@ -152,7 +152,7 @@ NODE_ENV="development"
 # WECHAT_API_V3_KEY=你的API v3密钥
 # WECHAT_API_V2_KEY=你的API v2密钥
 # WECHAT_SERIAL_NO=你的证书序列号
-# WECHAT_NOTIFY_URL=http://localhost:3001/api/payments/notify
+# WECHAT_NOTIFY_URL=http://localhost:3000/api/payments/notify
 ```
 
 #### 初始化数据库
@@ -205,8 +205,8 @@ npm run dev
 ```
 
 ### 5. 访问应用
-- 前端: http://localhost:3002
-- 后端API: http://localhost:3001
+- 前端: http://localhost:3001
+- 后端API: http://localhost:3000
 
 ## 💳 支付系统
 
@@ -218,6 +218,10 @@ npm run dev
 
 ### 微信支付（可选）
 如需使用微信支付，请参考 [支付系统配置文档](docs/PAYMENT_SETUP.md)
+
+## 🌐 FRP 内网穿透（宝塔 frps + 本地 frpc）
+
+- 参考文档：[`docs/FRP_GUIDE.md`](docs/FRP_GUIDE.md)
 
 ## 📱 页面路由
 
