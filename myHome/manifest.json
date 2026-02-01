@@ -1,0 +1,115 @@
+{
+  "name": "智能骑行助手",
+  "short_name": "骑行助手",
+  "description": "宁波-九江智能骑行导航助手 - 实时导航、天气预警、住宿规划",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#2196F3",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "zh-CN",
+  "categories": ["navigation", "travel", "sports"],
+  "icons": [
+    {
+      "src": "icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "开始行程",
+      "short_name": "开始",
+      "description": "开始新的骑行行程",
+      "url": "/?action=start",
+      "icons": [{ "src": "icons/start-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "查看地图",
+      "short_name": "地图",
+      "description": "查看当前位置和路线",
+      "url": "/?action=map",
+      "icons": [{ "src": "icons/map-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "天气信息",
+      "short_name": "天气",
+      "description": "查看当前天气和预报",
+      "url": "/?action=weather",
+      "icons": [{ "src": "icons/weather-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "紧急求助",
+      "short_name": "紧急",
+      "description": "一键紧急求助",
+      "url": "/?action=emergency",
+      "icons": [{ "src": "icons/emergency-96x96.png", "sizes": "96x96" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/map-view.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "地图视图 - 显示骑行路线和当前位置"
+    },
+    {
+      "src": "screenshots/ai-suggestions.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "AI智能建议 - 根据实时数据提供骑行建议"
+    },
+    {
+      "src": "screenshots/weather-info.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "天气信息 - 实时天气和预警"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
+}

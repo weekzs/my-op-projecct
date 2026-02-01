@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="宁波-九江智能骑行助手 - 实时导航、天气预警、住宿规划">
+    <meta name="theme-color" content="#2196F3">
+    <title>🚴 宁波-九江智能骑行助手</title>
+    
+    <!-- 天地图API - 延迟加载 -->
+    <script type="text/javascript">
+        // 天地图API加载状态监控
+        window.tiandituLoadStatus = {
+            loaded: false,
+            error: false,
+            retryCount: 0,
+            maxRetries: 3
+        };
+
+        // 加载天地图API
+        function loadTiandituAPI() {
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = 'https://api.tianditu.gov.cn/api?v=4.0&tk=b9dba51939890c06d308032e54dd8c71';
+            
+            script.onload = function() {
+                console.log('✓ 天地图API脚本加载成功');
+                window.tiandituLoadStatus.loaded = true;
+                
+                // 验证T对象是否可用
+                if (typeof T !== 'undefined') {
+                    console.log('✓ T对象可用，版本:', T.VERSION || '4.0');
+                } else {
+                    console.warn('⚠️ 脚本加载成功但T对象不可用');
+                }
+            };
+            
+            script.onerror = function() {
+                console.error('❌ 天地图API脚本加载失败');
+                window.tiandituLoadStatus.error = true;
+                
+                // 重试机制
+                if (window.tiandituLoadStatus.retryCount < window.tiandituLoadStatus.maxRetries) {
+                    window.tiandituLoadStatus.retryCount++;
+                    console.log(`尝试重新加载 (${window.tiandituLoadStatus.retryCount}/${window.tiandituLoadStatus.maxRetries})`);
+                    setTimeout(loadTiandituAPI, 2000);
+                } else {
+                    console.error('❌ 达到最大重试次数，天地图API加载失败');
+                    // 显示错误信息
+                    document.getElementById('map-loading').innerHTML = `
+                        <div style="text-align: center; color: #F44336;">
+                            <p style="font-size: 18px;">❌</p>
+                            <p>地图加载失败，请检查网络连接</p>
+                            <button onclick="loadTiandituAPI()" style="margin-top: 10px; padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                重新加载
+                            </button>
+                        </div>
+                    `;
+                }
+            };
+            
+            document.head.appendChild(script);
+        }
+
+        // 页面加载时开始加载API
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🌐 开始加载天地图API...');
+            loadTiandituAPI();
+        });
+    </script>
+    
+    <!-- 样式文件 -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- PWA配置 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- 图标 -->
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32x32.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192x192.png">
+</head>
+<body>
+    <!-- 主应用容器 -->
+    <div id="app" class="app-container">
+        <!-- 顶部状态栏 -->
+        <header class="status-header">
+            <div class="status-left">
+                <span id="current-location" class="location-status">
+                    📍 <span class="status-text">定位中...</span>
+                </span>
+            </div>
+            <div class="status-center">
+                <h1 class="app-title">🚴 宁波→九江</h1>
+            </div>
+            <div class="status-right">
+                <span id="battery-status" class="battery-status">
+                    🔋 <span class="status-text">--%</span>
+                </span>
+            </div>
+        </header>
+
+        <!-- 进度概览栏 -->
+        <section class="progress-overview">
+            <div class="progress-item">
+                <div class="progress-label">今日进度</div>
+                <div class="progress-value">
+                    <span id="today-distance">0</span> / <span id="target-distance">120</span> km
+                </div>
+                <div class="progress-bar">
+                    <div id="distance-progress" class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="progress-item">
+                <div class="progress-label">平均速度</div>
+                <div class="progress-value">
+                    <span id="average-speed">0</span> km/h
+                </div>
+            </div>
+            <div class="progress-item">
+                <div class="progress-label">预计到达</div>
+                <div class="progress-value">
+                    <span id="eta">--:--</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 导航显示区域 -->
+        <main class="map-section">
+            <div id="map-container" class="map-container">
+                <div id="tianditu-map" class="tianditu-map"></div>
+                
+                <!-- 导航信息叠加层 -->
+                <div id="navigation-overlay" class="navigation-overlay" style="display: none;">
+                    <!-- 当前转向指示 -->
+                    <div class="turn-indicator">
+                        <div id="turn-arrow" class="turn-arrow">⬆️</div>
+                        <div id="turn-distance" class="turn-distance">200m</div>
+                        <div id="turn-instruction" class="turn-instruction">直行</div>
+                    </div>
+                    
+                    <!-- 路况信息条 -->
+                    <div id="traffic-bar" class="traffic-bar">
+                        <div class="traffic-status">
+                            <span id="traffic-indicator" class="traffic-indicator smooth"></span>
+                            <span id="traffic-text">路况畅通</span>
+                        </div>
+                        <div class="speed-info">
+                            <span id="current-speed">0</span> km/h
+                        </div>
+                    </div>
+                    
+                    <!-- ETA信息 -->
+                    <div class="eta-info">
+                        <div class="eta-item">
+                            <span class="eta-label">剩余</span>
+                            <span id="nav-distance">--km</span>
+                        </div>
+                        <div class="eta-item">
+                            <span class="eta-label">预计</span>
+                            <span id="nav-time">--:--</span>
+                        </div>
+                        <div class="eta-item">
+                            <span class="eta-label">到达</span>
+                            <span id="nav-arrival">--:--</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 地图控制按钮 -->
+                <div class="map-controls">
+                    <button id="current-location-btn" class="map-btn" title="回到当前位置">
+                        📍
+                    </button>
+                    <button id="toggle-route-btn" class="map-btn" title="显示/隐藏路线">
+                        🛣️
+                    </button>
+                    <button id="toggle-accommodation-btn" class="map-btn" title="显示/隐藏住宿">
+                        🏨
+                    </button>
+                    <button id="fullscreen-btn" class="map-btn" title="全屏">
+                        🔳
+                    </button>
+                </div>
+                
+                <!-- 地图加载状态 -->
+                <div id="map-loading" class="map-loading">
+                    <div class="loading-spinner"></div>
+                    <p>地图加载中...</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- 导航控制区域 -->
+        <section class="navigation-control">
+            <div class="nav-card" id="navigation-card">
+                <div class="nav-header">
+                    <h3>🧭 导航控制</h3>
+                    <div class="nav-status-indicator" id="nav-status">
+                        <span class="status-dot inactive"></span>
+                        <span class="status-text">未开始</span>
+                    </div>
+                </div>
+                
+                <div class="nav-content" id="nav-content">
+                    <!-- 导航状态显示 -->
+                    <div class="nav-status-display">
+                        <div class="status-row">
+                            <span class="label">状态:</span>
+                            <span id="nav-current-status">未开始导航</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="label">路线:</span>
+                            <span id="nav-route-info">宁波 → 九江</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="label">进度:</span>
+                            <div class="progress-mini">
+                                <div id="nav-progress-bar" class="progress-mini-fill" style="width: 0%"></div>
+                            </div>
+                            <span id="nav-progress-text">0%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 导航控制按钮 -->
+                    <div class="nav-controls">
+                        <button id="start-navigation" class="btn btn-nav btn-start-nav">
+                            ▶️ 开始导航
+                        </button>
+                        <button id="stop-navigation" class="btn btn-nav btn-stop-nav" disabled>
+                            ⏹️ 停止导航
+                        </button>
+                        <button id="pause-navigation" class="btn btn-nav btn-pause-nav" disabled>
+                            ⏸️ 暂停
+                        </button>
+                        <button id="reroute" class="btn btn-nav btn-secondary" disabled>
+                            🔄 重新规划
+                        </button>
+                    </div>
+                    
+                    <!-- 语音控制 -->
+                    <div class="voice-control">
+                        <label class="switch">
+                            <input type="checkbox" id="voice-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <span class="voice-label">语音导航</span>
+                        <button id="test-voice" class="btn btn-voice-test">
+                            🔊 测试
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI智能建议区域 -->
+        <section class="ai-suggestions">
+            <div class="suggestion-card" id="ai-recommendation">
+                <div class="suggestion-header">
+                    <h3>🤖 AI智能建议</h3>
+                    <span id="suggestion-time" class="suggestion-time">--:--</span>
+                </div>
+                <div class="suggestion-content" id="suggestion-content">
+                    <div class="suggestion-loading">
+                        <div class="loading-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <p>AI正在分析您的骑行状态...</p>
+                    </div>
+                </div>
+                <div class="suggestion-actions">
+                    <button id="accept-suggestion" class="btn btn-primary" disabled>
+                        ✓ 采纳建议
+                    </button>
+                    <button id="modify-suggestion" class="btn btn-secondary" disabled>
+                        ⚙️ 调整方案
+                    </button>
+                    <button id="emergency-help" class="btn btn-emergency">
+                        🆘 紧急求助
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 快速信息面板 -->
+        <section class="quick-info">
+            <div class="info-grid">
+                <!-- 天气信息 -->
+                <div class="info-card weather-card">
+                    <div class="info-header">
+                        <h4>🌤️ 天气</h4>
+                        <button id="refresh-weather" class="refresh-btn" title="刷新天气">
+                            🔄
+                        </button>
+                    </div>
+                    <div class="info-content">
+                        <div id="current-weather" class="weather-current">
+                            <div class="weather-loading">加载中...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 住宿信息 -->
+                <div class="info-card accommodation-card">
+                    <div class="info-header">
+                        <h4>🏨 住宿</h4>
+                        <button id="find-accommodation" class="refresh-btn" title="查找住宿">
+                            🔍
+                        </button>
+                    </div>
+                    <div class="info-content">
+                        <div id="next-accommodation" class="accommodation-next">
+                            <div class="accommodation-loading">智能推荐中...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 体力状态 -->
+                <div class="info-card fitness-card">
+                    <div class="info-header">
+                        <h4>💪 体力状态</h4>
+                    </div>
+                    <div class="info-content">
+                        <div id="fitness-status" class="fitness-status">
+                            <div class="fitness-indicator" id="fitness-indicator">
+                                <div class="fitness-fill" style="width: 100%"></div>
+                            </div>
+                            <div class="fitness-text">状态良好</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 路况信息 -->
+                <div class="info-card road-card">
+                    <div class="info-header">
+                        <h4>🛣️ 路况</h4>
+                    </div>
+                    <div class="info-content">
+                        <div id="road-condition" class="road-condition">
+                            <div class="road-status">正常</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 底部控制栏 -->
+        <footer class="bottom-controls">
+            <div class="control-group">
+                <button id="start-trip" class="btn btn-control btn-start">
+                    ▶️ 开始行程
+                </button>
+                <button id="pause-trip" class="btn btn-control btn-pause" disabled>
+                    ⏸️ 暂停
+                </button>
+                <button id="rest-stop" class="btn btn-control btn-rest">
+                    ☕ 休息
+                </button>
+            </div>
+            <div class="control-group">
+                <button id="settings" class="btn btn-control">
+                    ⚙️ 设置
+                </button>
+                <button id="history" class="btn btn-control">
+                    📊 统计
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 设置面板 -->
+    <div id="settings-panel" class="panel-overlay" style="display: none;">
+        <div class="panel-content">
+            <div class="panel-header">
+                <h3>⚙️ 设置</h3>
+                <button id="close-settings" class="close-btn">×</button>
+            </div>
+            <div class="panel-body">
+                <div class="setting-group">
+                    <label for="daily-budget">每日预算（元）</label>
+                    <input type="number" id="daily-budget" value="100" min="50" max="500">
+                </div>
+                <div class="setting-group">
+                    <label for="preferred-start-time">偏好出发时间</label>
+                    <input type="time" id="preferred-start-time" value="08:00">
+                </div>
+                <div class="setting-group">
+                    <label for="riding-style">骑行风格</label>
+                    <select id="riding-style">
+                        <option value="conservative">保守型</option>
+                        <option value="balanced" selected>平衡型</option>
+                        <option value="aggressive">激进型</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label for="accommodation-type">住宿偏好</label>
+                    <select id="accommodation-type">
+                        <option value="budget" selected>超经济型</option>
+                        <option value="economy">经济型</option>
+                        <option value="comfort">舒适型</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label for="auto-adjustment">
+                        <input type="checkbox" id="auto-adjustment" checked>
+                        启用自动调整建议
+                    </label>
+                </div>
+                <div class="setting-group">
+                    <label for="emergency-contact">紧急联系人</label>
+                    <input type="tel" id="emergency-contact" placeholder="输入电话号码">
+                </div>
+                <button id="save-settings" class="btn btn-primary">保存设置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 紧急求助面板 -->
+    <div id="emergency-panel" class="panel-overlay" style="display: none;">
+        <div class="panel-content emergency-content">
+            <div class="panel-header emergency-header">
+                <h3>🆘 紧急求助</h3>
+                <button id="close-emergency" class="close-btn">×</button>
+            </div>
+            <div class="panel-body">
+                <div class="emergency-location">
+                    <h4>📍 当前位置</h4>
+                    <p id="emergency-coords">获取中...</p>
+                    <button id="share-location" class="btn btn-primary">分享位置</button>
+                </div>
+                <div class="emergency-actions">
+                    <h4>🚨 紧急操作</h4>
+                    <button id="call-emergency" class="btn btn-emergency-large">📞 拨打紧急电话</button>
+                    <button id="find-nearby-help" class="btn btn-secondary">🔍 查找附近帮助</button>
+                    <button id="start-sos" class="btn btn-sos">▶️ 启动SOS模式</button>
+                </div>
+                <div class="emergency-contacts">
+                    <h4>👥 紧急联系人</h4>
+                    <div id="emergency-contacts-list" class="contacts-list">
+                        <!-- 动态生成联系人列表 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript文件 -->
+    <script src="js/config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/location.js"></script>
+    <script src="js/weather.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/ai-assistant.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/traffic-monitor.js"></script>
+    <script src="js/app.js"></script>
+
+    <!-- 服务注册（PWA） -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => console.log('SW registered'))
+                    .catch(error => console.log('SW registration failed'));
+            });
+        }
+    </script>
+</body>
+</html>

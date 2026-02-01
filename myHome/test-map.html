@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天地图API测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            width: 100%;
+            height: 500px;
+            border: 2px solid #ccc;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>🗺️ 天地图API测试页面</h1>
+    
+    <div id="status" class="status info">
+        正在测试天地图API加载状态...
+    </div>
+    
+    <div>
+        <button onclick="testBasicMap()">基础地图测试</button>
+        <button onclick="testWithKey()">使用API密钥测试</button>
+        <button onclick="testDifferentLayers()">测试不同图层</button>
+        <button onclick="testLocation()">获取当前位置</button>
+    </div>
+    
+    <div id="map"></div>
+    
+    <div id="debug-info" style="background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 4px;">
+        <h3>调试信息：</h3>
+        <pre id="debug-content">等待测试...</pre>
+    </div>
+
+    <!-- 方案1：基础天地图API -->
+    <script type="text/javascript">
+        let map = null;
+        let testResults = [];
+
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function updateDebug(content) {
+            const debugContent = document.getElementById('debug-content');
+            debugContent.textContent = content;
+        }
+
+        function logDebug(message) {
+            testResults.push(`[${new Date().toLocaleTimeString()}] ${message}`);
+            updateDebug(testResults.join('\n'));
+        }
+
+        // 测试基础地图加载
+        function testBasicMap() {
+            logDebug('开始测试基础地图...');
+            
+            // 检查T对象是否存在
+            if (typeof T !== 'undefined') {
+                logDebug('✓ 天地图API已加载');
+                updateStatus('天地图API加载成功', 'success');
+                
+                try {
+                    // 创建地图实例
+                    map = new T.Map('map');
+                    logDebug('✓ 地图实例创建成功');
+                    
+                    // 设置中心点和缩放级别
+                    const center = new T.LngLat(116.404, 39.915);
+                    map.centerAndZoom(center, 12);
+                    logDebug('✓ 地图中心设置成功: 北京天安门');
+                    
+                    // 添加缩放控件
+                    map.addControl(new T.Control.Zoom());
+                    logDebug('✓ 缩放控件添加成功');
+                    
+                    updateStatus('基础地图测试成功！', 'success');
+                    
+                } catch (error) {
+                    logDebug(`✗ 地图创建失败: ${error.message}`);
+                    updateStatus(`地图创建失败: ${error.message}`, 'error');
+                }
+            } else {
+                logDebug('✗ 天地图API未加载');
+                updateStatus('天地图API加载失败', 'error');
+            }
+        }
+
+        // 使用API密钥测试
+        function testWithKey() {
+            logDebug('开始测试带API密钥的地图...');
+            
+            // 重新加载带API密钥的脚本
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = 'https://api.tianditu.gov.cn/api?v=4.0&tk=b9dba51939890c06d308032e54dd8c71';
+            script.onload = function() {
+                logDebug('✓ 带密钥的天地图API加载成功');
+                
+                if (map) {
+                    map.destroy();
+                }
+                
+                try {
+                    map = new T.Map('map');
+                    const center = new T.LngLat(121.5440, 29.8683); // 宁波
+                    map.centerAndZoom(center, 10);
+                    
+                    // 添加图层
+                    const vecLayer = new T.TileLayer.wmts();
+                    map.addLayer(vecLayer);
+                    logDebug('✓ 矢量图层添加成功');
+                    
+                    const cvaLayer = new T.TileLayer.wmts({
+                        layer: 'cva',
+                        style: 'default'
+                    });
+                    map.addLayer(cvaLayer);
+                    logDebug('✓ 注记图层添加成功');
+                    
+                    // 添加标记
+                    const marker = new T.Marker(center);
+                    map.addOverLay(marker);
+                    logDebug('✓ 标记添加成功: 宁波');
+                    
+                    updateStatus('API密钥测试成功！', 'success');
+                    
+                } catch (error) {
+                    logDebug(`✗ API密钥测试失败: ${error.message}`);
+                    updateStatus(`API密钥测试失败: ${error.message}`, 'error');
+                }
+            };
+            script.onerror = function() {
+                logDebug('✗ 带密钥的API加载失败');
+                updateStatus('带API密钥的API加载失败', 'error');
+            };
+            
+            document.head.appendChild(script);
+        }
+
+        // 测试不同图层
+        function testDifferentLayers() {
+            if (!map) {
+                updateStatus('请先创建地图', 'error');
+                return;
+            }
+            
+            logDebug('开始测试不同图层...');
+            
+            try {
+                // 卫星图
+                const satLayer = new T.TileLayer.wmts({
+                    layer: 'img',
+                    style: 'default'
+                });
+                map.addLayer(satLayer);
+                logDebug('✓ 卫星图层添加成功');
+                
+                // 地形图
+                const terLayer = new T.TileLayer.wmts({
+                    layer: 'ter',
+                    style: 'default'
+                });
+                logDebug('✓ 地形图层准备成功');
+                
+                updateStatus('图层测试完成', 'success');
+                
+            } catch (error) {
+                logDebug(`✗ 图层测试失败: ${error.message}`);
+                updateStatus(`图层测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试定位功能
+        function testLocation() {
+            logDebug('开始测试定位功能...');
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        logDebug(`✓ 获取位置成功: ${lat}, ${lng}`);
+                        
+                        if (map) {
+                            const currentLocation = new T.LngLat(lng, lat);
+                            map.centerAndZoom(currentLocation, 15);
+                            
+                            // 添加当前位置标记
+                            const marker = new T.Marker(currentLocation);
+                            map.addOverLay(marker);
+                            
+                            logDebug('✓ 当前位置标记添加成功');
+                            updateStatus(`定位成功！当前位置: ${lat.toFixed(6)}, ${lng.toFixed(6)}`, 'success');
+                        }
+                    },
+                    function(error) {
+                        logDebug(`✗ 定位失败: ${error.message}`);
+                        updateStatus(`定位失败: ${error.message}`, 'error');
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    }
+                );
+            } else {
+                logDebug('✗ 浏览器不支持地理定位');
+                updateStatus('浏览器不支持地理定位', 'error');
+            }
+        }
+
+        // 页面加载完成后自动测试
+        window.onload = function() {
+            logDebug('页面加载完成，开始API检测...');
+            
+            // 检查是否有T对象
+            setTimeout(() => {
+                if (typeof T !== 'undefined') {
+                    logDebug('✓ 检测到天地图API对象');
+                    updateStatus('天地图API已加载，可以开始测试', 'success');
+                } else {
+                    logDebug('✗ 未检测到天地图API对象');
+                    updateStatus('天地图API未加载，请检查网络连接', 'error');
+                }
+            }, 2000);
+        };
+
+        // 错误处理
+        window.addEventListener('error', function(event) {
+            logDebug(`JavaScript错误: ${event.message} at ${event.filename}:${event.lineno}`);
+        });
+    </script>
+
+    <!-- 方案2：带API密钥的天地图API -->
+    <script type="text/javascript" src="https://api.tianditu.gov.cn/api?v=4.0&tk=b9dba51939890c06d308032e54dd8c71"></script>
+</body>
+</html>
